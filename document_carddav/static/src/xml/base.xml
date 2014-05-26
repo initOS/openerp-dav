@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-extend="SearchView.CustomFilters">
+        <t t-jquery="div.oe_searchview_custom" t-operation="after">
+            <div>
+                <h4>CardDAV url</h4>
+                <input id="filter_carddav_url" />
+            </div>
+        </t>
+    </t>
+</templates>
