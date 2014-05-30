@@ -36,8 +36,8 @@ A very simple CardDAV implementation
 
 Urls:
 
-- For all partners: /webdav/$db_name/addressbooks/users/$login/a-res.partner/default/
-- For all leads: /webdav/$db_name/addressbooks/users/$login/a-crm.lead/default/
+- For all partners: /webdav/$db_name/addressbooks/users/$login/a/m-res.partner/default/
+- For all leads: /webdav/$db_name/addressbooks/users/$login/a/m-crm.lead/default/
 
 Collections can be filtered, the url is then shown in the search view drop-down.
     """,
