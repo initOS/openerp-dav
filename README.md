@@ -7,3 +7,5 @@ vCard and CardDAV modules for OpenERP (Odoo), currently v7 only.
 * crm_vcard: This module includes a basic mapping for crm.lead from and to vCards.
 * document_carddav: A very simple CardDAV implementation
 * document_webdav_fast: A copy of the original document_webdav module with patches for performance improvements.
+
+*IMPORTANT* The modules require the latest version of PyWebDAV 0.9.8.
