@@ -362,8 +362,7 @@ class openerp_dav_handler(dav_interface):
     @memoize(4)
     def _all_db_list(self):
         """return all databases who have module document_webdav installed"""
-        s = netsvc.ExportService.getService('db')
-        result = s.exp_list()
+        result = openerp.service.db.exp_list(True)
         self.db_name_list=[]
         for db_name in result:
             cr = None

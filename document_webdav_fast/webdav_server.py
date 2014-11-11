@@ -34,7 +34,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 ###############################################################################
 
-
+import base64
 import logging
 from openerp import netsvc
 from dav_fs import openerp_dav_handler
@@ -49,15 +49,14 @@ except ImportError:
     from DAV.utils import IfParser, TagList
     from DAV.errors import DAV_Error, DAV_Forbidden, DAV_NotFound
     from DAV.propfind import PROPFIND
-from openerp.service import http_server
-from openerp.service.websrv_lib import FixSendError, HttpOptions
+from openerp.service.websrv_lib import AuthProvider, AuthRequiredExc, FixSendError, HTTPHandler, HttpOptions, reg_http_service
 from BaseHTTPServer import BaseHTTPRequestHandler
 import urlparse
 import urllib
 import re
 import time
 from string import atoi
-import addons
+from openerp.modules.module import get_module_resource
 import socket
 # from DAV.constants import DAV_VERSION_1, DAV_VERSION_2
 from xml.dom import minidom
@@ -438,16 +437,65 @@ class DAVHandler(HttpOptions, DAVRequestHandler, FixSendError):
                 data['lockowner'] = owners
         return data
 
-from openerp.service.http_server import reg_http_service,OpenERPAuthProvider
 
-class DAVAuthProvider(OpenERPAuthProvider):
+from openerp.service import security
+
+
+class DAVAuthProvider(AuthProvider):
+
+    """ Require basic authentication."""
+    def __init__(self,realm='OpenERP User'):
+        self.realm = realm
+        self.auth_creds = {}
+        self.auth_tries = 0
+        self.last_auth = None
+
     def authenticate(self, db, user, passwd, client_address):
         """ authenticate, but also allow the False db, meaning to skip
             authentication when no db is specified.
         """
         if db is False:
             return True
-        return OpenERPAuthProvider.authenticate(self, db, user, passwd, client_address)
+        try:
+            uid = security.login(db,user,passwd)
+            if uid is False:
+                return False
+            return user, passwd, db, uid
+        except Exception,e:
+            _logger.debug("Fail auth: %s" % e )
+            return False
+
+    def checkRequest(self,handler,path, db=False):        
+        auth_str = handler.headers.get('Authorization',False)
+        try:
+            if not db:
+                db = handler.get_db_from_path(path)
+        except Exception:
+            if path.startswith('/'):
+                path = path[1:]
+            psp= path.split('/')
+            if len(psp)>1:
+                db = psp[0]
+            else:
+                #FIXME!
+                _logger.info("Wrong path: %s, failing auth" %path)
+                raise AuthRejectedExc("Authorization failed. Wrong sub-path.") 
+        if self.auth_creds.get(db):
+            return True 
+        if auth_str and auth_str.startswith('Basic '):
+            auth_str=auth_str[len('Basic '):]
+            (user,passwd) = base64.decodestring(auth_str).split(':')
+            _logger.info("Found user=\"%s\", passwd=\"***\" for db=\"%s\"", user, db)
+            acd = self.authenticate(db,user,passwd,handler.client_address)
+            if acd != False:
+                self.auth_creds[db] = acd
+                self.last_auth = db
+                return True
+        if self.auth_tries > 5:
+            _logger.info("Failing authorization after 5 requests w/o password")
+            raise AuthRejectedExc("Authorization failed.")
+        self.auth_tries += 1
+        raise AuthRequiredExc(atype='Basic', realm=self.realm)
 
 
 class dummy_dav_interface(object):
@@ -512,7 +560,7 @@ class dummy_dav_interface(object):
     def clean_up_connection(self):
         pass
 
-class DAVStaticHandler(http_server.StaticHTTPHandler):
+class DAVStaticHandler(FixSendError, HttpOptions, HTTPHandler):
     """ A variant of the Static handler, which will serve dummy DAV requests
     """
 
@@ -616,7 +664,7 @@ try:
             if base_path and base_path == '/':
                 dir_path = config.get_misc('static-http', 'dir_path', False)
             else:
-                dir_path = addons.get_module_resource('document_webdav_fast','public_html')
+                dir_path = get_module_resource('document_webdav_fast','public_html')
                 # an _ugly_ hack: we put that dir back in tools.config.misc, so that
                 # the StaticHttpHandler can find its dir_path.
                 config.misc.setdefault('static-http',{})['dir_path'] = dir_path
