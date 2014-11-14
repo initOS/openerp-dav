@@ -19,7 +19,7 @@
             <field name="user_id" eval="False"/>
             <field name="resource_field" ref="base.field_res_users_login"/>
             <field name="company_id" ref="base.main_company"/>
-            <field model="document.directory" name="parent_id" ref="document_directory_addressbook"/>
+            <field name="parent_id" ref="document_directory_addressbook"/>
             <field name="type">ressource</field>
             <field name="ressource_type_id" ref="base.model_res_users"/>
             <field eval="[(6,0,[ref('base.group_document_user')])]" name="group_ids"/>
@@ -30,14 +30,14 @@
             <field eval="1" name="resource_find_all"/>
             <field name="user_id" eval="False"/>
             <field name="company_id" ref="base.main_company"/>
-            <field model="document.directory" name="parent_id" ref="document_directory_users"/>
+            <field name="parent_id" ref="document_directory_users"/>
             <field name="type">directory</field>
             <field eval="[(6,0,[ref('base.group_document_user')])]" name="group_ids"/>
             <field name="name">a</field>
             <field eval="1" name="addressbook_collection"/>
         </record>
         <record id="document_webdav_dir_property_addressbookhomeset" model="document.webdav.dir.property">
-            <field model="document.directory" name="dir_id" ref="document_directory_addressbook"/>
+            <field name="dir_id" ref="document_directory_addressbook"/>
             <field name="namespace">urn:ietf:params:xml:ns:carddav</field>
             <!-- no parent, it is a global property -->
             <field name="name">addressbook-home-set</field>
